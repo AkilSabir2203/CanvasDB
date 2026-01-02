@@ -14,7 +14,7 @@ import { placeholderData } from '@/app/libs/constants';
 function downloadImage(dataUrl: string) {
     const a = document.createElement('a');
 
-    a.setAttribute('download', 'next-erd.png');
+    a.setAttribute('download', 'canvasDB.png');
     a.setAttribute('href', dataUrl);
     a.click();
 }
