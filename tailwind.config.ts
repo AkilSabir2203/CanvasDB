@@ -8,6 +8,8 @@ const config: Config = {
     theme: {
       extend: {
         colors: {
+          prismaTeal: '#16A394',
+          prismadeepTeal: '#127976',
           background: 'hsl(var(--background))',
           foreground: 'hsl(var(--foreground))',
           card: {

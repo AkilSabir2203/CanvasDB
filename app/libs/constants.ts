@@ -12,18 +12,18 @@ export const placeholderData: GenerateFormData =
             "attributes": [
                 {
                     "name": "email",
-                    "type": "string",
+                    "type": "String",
                     "constraint": {
                         "type": "unique"
                     }
                 },
                 {
                     "name": "password",
-                    "type": "string"
+                    "type": "String"
                 },
                 {
                     "name": "createdAt",
-                    "type": "Date"
+                    "type": "String"
                 }
             ]
         },
@@ -32,15 +32,15 @@ export const placeholderData: GenerateFormData =
             "attributes": [
                 {
                     "name": "description",
-                    "type": "string"
+                    "type": "String"
                 },
                 {
                     "name": "title",
-                    "type": "string"
+                    "type": "String"
                 },
                 {
                     "name": "sequence",
-                    "type": "number"
+                    "type": "Int"
                 }
             ]
         }
@@ -53,5 +53,5 @@ export const placeholderData: GenerateFormData =
         }
     ]
 }
-export const attributeTypes: Attribute[] = ["string", "number", "boolean", "Date"];
+export const attributeTypes: Attribute[] = ["String", "Boolean", "Int", "BigInt", "Float", "Decimal", "Json", "Bytes", "DateTime"];
 export const relationTypes: Relation["type"][] = ["1-1", "m-n", "1-m", "m-1"];

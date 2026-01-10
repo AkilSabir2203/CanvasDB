@@ -7,10 +7,11 @@ import EntityNode, { EntityNodeProps } from './EntityNode';
 import RelationEdge, { RelationEdgeProps } from './RelationEdge';
 import Toolbar from './Toolbar';
 import DownloadButton from './DownloadButton';
+import  Sidebar  from "./Sidebar";
 
 const initialNodes: EntityNodeProps[] = [
-    { id: '1', position: { x: 10, y: 10 }, data: { name: '', attributes: [{ name: "", type: "string" }], open: true }, type: 'entity' },
-    { id: '2', position: { x: 400, y: 400 }, data: { name: '', attributes: [{ name: "", type: "string" }], open: false }, type: 'entity' },
+    { id: '1', position: { x: 10, y: 10 }, data: { name: '', attributes: [{ name: "", type: "String" }], open: true }, type: 'entity' },
+    { id: '2', position: { x: 400, y: 400 }, data: { name: '', attributes: [{ name: "", type: "String" }], open: false }, type: 'entity' },
 ];
 const initialEdges: RelationEdgeProps[] = [{ id: 'e1-2', source: '1', target: '2', type: "relation", data: { type: "1-m" } }];
 
@@ -42,8 +43,10 @@ export default function ErdBoard() {
                 onConnect={onConnect}
                 nodeTypes={nodeTypes}
                 edgeTypes={edgeTypes}
+                minZoom={0.1}
             >
                 <Background variant={BackgroundVariant.Dots} gap={12} size={1} />
+                <Sidebar />
                 <DownloadButton />
                 <Toolbar />
                 <MiniMap />

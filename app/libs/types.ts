@@ -1,4 +1,4 @@
-export type Attribute = "string" | "number" | "boolean" | "Date" | 'string[]' | 'number[]' | 'boolean[]' | 'Date[]';
+export type Attribute = "String" | "Boolean" | "Int" | "BigInt" | "Float" | "Decimal" | "Json" | "Bytes" | "DateTime" | 'String[]' | 'Boolean[]' | 'Int[]' | 'BigInt[]' | 'Float[]' | 'Decimal[]' | 'Json[]' | 'Bytes[]' | 'DateTime[]';
 export type ConstraintType = "required" | "unique" | "optional" | "default";
 export interface Entity {
   name: string;

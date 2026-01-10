@@ -1,4 +1,4 @@
-import ErdBoard from "@/app/components/erd/Index";
+import ErdBoard from "@/app/components/canvas/Index";
 
 export default function Home() {
   return (

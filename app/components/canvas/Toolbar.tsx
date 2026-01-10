@@ -34,7 +34,7 @@ function Toolbar() {
                 {
                     id: (parseInt(nodes[nodes.length - 1]?.id || '0') + 1).toString(),
                     type: 'entity',
-                    data: { name: '', attributes: [{ name: "", type: "string" }], open: true },
+                    data: { name: '', attributes: [{ name: "", type: "String" }], open: true },
                     position: { x: (nodes[nodes.length - 1]?.position.x || 10) + 300, y: nodes[nodes.length - 1]?.position.y || 10 },
                 } as EntityNodeProps,
             ];
