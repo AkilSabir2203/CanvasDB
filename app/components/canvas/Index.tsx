@@ -2,7 +2,7 @@
 import { addEdge, Background, BackgroundVariant, MiniMap, ReactFlow, useEdgesState, useNodesState } from '@xyflow/react';
 
 import '@xyflow/react/dist/style.css';
-import { useCallback } from 'react';
+import React, { useCallback } from 'react';
 import EntityNode, { EntityNodeProps } from './EntityNode';
 import RelationEdge, { RelationEdgeProps } from './RelationEdge';
 import Toolbar from './Toolbar';
@@ -15,6 +15,8 @@ const initialNodes: EntityNodeProps[] = [
 ];
 const initialEdges: RelationEdgeProps[] = [{ id: 'e1-2', source: '1', target: '2', type: "relation", data: { type: "1-m" } }];
 
+import useCanvasStore from '@/app/hooks/useCanvasStore';
+
 const edgeTypes = {
     'relation': RelationEdge
 };
@@ -24,9 +26,37 @@ const nodeTypes = {
 };
 
 export default function ErdBoard() {
-    const [nodes, , onNodesChange] = useNodesState(initialNodes);
-    const [edges, setEdges, onEdgesChange] = useEdgesState(initialEdges);
+    const canvasStore = useCanvasStore();
 
+    // Read persisted state directly to determine if we should restore saved canvas
+    let persistedNodes: EntityNodeProps[] | undefined = undefined;
+    let persistedEdges: RelationEdgeProps[] | undefined = undefined;
+
+    if (typeof window !== 'undefined') {
+        const raw = localStorage.getItem('canvas-storage-v1');
+        if (raw) {
+            try {
+                const parsed = JSON.parse(raw);
+                const s = parsed.state ?? parsed;
+                if (Array.isArray(s.nodes)) persistedNodes = s.nodes as EntityNodeProps[];
+                if (Array.isArray(s.edges)) persistedEdges = s.edges as RelationEdgeProps[];
+            } catch (e) {
+                // ignore parse errors
+            }
+        }
+    }
+
+    const [nodes, setNodes, onNodesChange] = useNodesState(persistedNodes ?? initialNodes);
+    const [edges, setEdges, onEdgesChange] = useEdgesState(persistedEdges ?? initialEdges);
+
+    // Sync react-flow changes into the persisted store
+    React.useEffect(() => {
+        canvasStore.setNodes(nodes);
+    }, [nodes]);
+
+    React.useEffect(() => {
+        canvasStore.setEdges(edges);
+    }, [edges]);
     const onConnect = useCallback(
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         (params: any) => setEdges((eds) => addEdge({ ...params, type: "relation", data: { type: "1-m" } }, eds)),

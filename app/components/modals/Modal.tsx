@@ -16,6 +16,12 @@ interface ModalProps {
    disabled?: boolean;
    secondaryAction?: () => void;
    secondaryActionLabel?: string;
+   // new visualize action (optional)
+   onVisualize?: () => void;
+   onVisualizeLabel?: string;
+   // allow separately disabling secondary/visualize actions without tying to `disabled`
+   secondaryDisabled?: boolean;
+   visualizeDisabled?: boolean;
 }
 
 const Modal: React.FC<ModalProps> = ({
@@ -29,6 +35,10 @@ const Modal: React.FC<ModalProps> = ({
    disabled,
    secondaryAction,
    secondaryActionLabel,
+   onVisualize,
+   onVisualizeLabel,
+   secondaryDisabled,
+   visualizeDisabled,
 }) => {
    const [showModal, setShowModal] = useState(isOpen);
 
@@ -67,12 +77,22 @@ const Modal: React.FC<ModalProps> = ({
    }, [disabled, onSubmit]);
 
    const handleSecondayAction = useCallback(() => {
-      if (disabled || !secondaryAction) {
+      if (disabled || secondaryDisabled || !secondaryAction) {
          return;
       }
 
       secondaryAction();
-   }, [disabled, secondaryAction]);
+   }, [disabled, secondaryAction, secondaryDisabled]);
+
+   // visualize action handler (independent of generation disabled state)
+   const handleVisualizeAction = useCallback(() => {
+      // allow visualize to be controlled separately by `visualizeDisabled` prop
+      if (visualizeDisabled || !onVisualize) {
+         return;
+      }
+
+      onVisualize();
+   }, [onVisualize, visualizeDisabled]);
 
    if (!isOpen) {
       return null;
@@ -107,9 +127,19 @@ const Modal: React.FC<ModalProps> = ({
                            {secondaryAction && secondaryActionLabel && (
                               <FormButton
                                  outline
-                                 disabled={disabled}
+                                 disabled={secondaryDisabled ?? disabled}
                                  label={secondaryActionLabel}
                                  onClick={handleSecondayAction}
+                              />
+                           )}
+
+                           {/* visualize button (optional) */}
+                           {onVisualize && onVisualizeLabel && (
+                              <FormButton
+                                 outline
+                                 disabled={!!visualizeDisabled}
+                                 label={onVisualizeLabel}
+                                 onClick={handleVisualizeAction}
                               />
                            )}
 

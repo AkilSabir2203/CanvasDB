@@ -9,11 +9,13 @@ import { Input } from '@/app/components/ui/Input';
 import { Select, SelectContent, SelectItem, SelectTrigger } from '@/app/components/ui/Select';
 import { attributeTypes } from '@/app/libs/constants';
 import { SiPrisma } from "react-icons/si";
-import { Loader2, Sparkles, Workflow } from "lucide-react";
+import { Loader2, Sparkles, Workflow, Copy } from "lucide-react";
+import { useSession } from "next-auth/react";
+import useLoginModal from '@/app/hooks/useLoginModal';
 
 
 export default function Sidebar() {
-  const { getNodes, getEdges, setNodes } = useReactFlow();
+  const { getNodes, getEdges, setNodes, setEdges } = useReactFlow();
 
 
   const nodes = getNodes().filter((n) => n.type === 'entity') as any[];
@@ -86,14 +88,33 @@ export default function Sidebar() {
     }
   };
 
+  // Copy helper for AI-generated sparkles schema (UI-only helper)
+  const copySparklesToClipboard = async () => {
+    try {
+      await navigator.clipboard.writeText(sparklesSchema);
+      toast.success('Schema copied to clipboard');
+    } catch (err) {
+      toast.error('Copy failed');
+    }
+  };
+
   // AI Sparkles modal state
   const [isSparklesOpen, setIsSparklesOpen] = useState(false);
   const [sparklesPrompt, setSparklesPrompt] = useState('');
   const [sparklesSchema, setSparklesSchema] = useState('');
   const [isSparklesGenerating, setIsSparklesGenerating] = useState(false);
 
+  // Auth gating: open LoginModal if user is not signed in
+  const loginModal = useLoginModal();
+  const { data: session } = useSession();
+
   const handleSparklesGenerate = async () => {
     if (isSparklesGenerating) return;
+
+    if (!session) {
+      loginModal.onOpen();
+      return;
+    }
 
     if (!sparklesPrompt) {
       toast.error('Please enter a prompt');
@@ -130,6 +151,181 @@ export default function Sidebar() {
     // clear generated schema so modal shows fresh state on reopen
     setSparklesSchema('');
     setIsSparklesGenerating(false);
+  };
+
+  // Visualize Prisma schema modal state
+  const [isVisualizeOpen, setIsVisualizeOpen] = useState(false);
+  const [visualizeText, setVisualizeText] = useState('');
+  const [isVisualizing, setIsVisualizing] = useState(false);
+
+  const parsePrismaSchema = (schema: string) => {
+    // Remove block comments and line comments
+    const cleaned = schema.replace(/\/\*[\s\S]*?\*\//g, '').replace(/\/\/.*$/gm, '');
+
+    const modelRegex = /model\s+([A-Za-z0-9_]+)\s*{([\s\S]*?)}/g;
+    const models: Record<string, { name: string; fields: Array<{ name: string; type: string; isList: boolean; rawType: string; directives: string }>; }> = {};
+
+    let match;
+    while ((match = modelRegex.exec(cleaned)) !== null) {
+      const name = match[1];
+      const body = match[2];
+      const lines = body.split('\n').map((l) => l.trim()).filter((l) => l.length > 0 && !l.startsWith('//'));
+      const fields: Array<{ name: string; type: string; isList: boolean; rawType: string; directives: string }> = [];
+
+      for (const line of lines) {
+        // Skip @@ attributes (model-level attributes) and attributes/indices
+        if (line.startsWith('@@')) continue;
+
+        // Field line: name type ...directives
+        const fieldMatch = /^([A-Za-z0-9_]+)\s+([A-Za-z0-9_\[\]\?]+)(.*)$/.exec(line);
+        if (!fieldMatch) continue;
+
+        const fname = fieldMatch[1];
+        const ftypeRaw = fieldMatch[2];
+        const directives = (fieldMatch[3] || '').trim();
+        const isList = /\[\]$/.test(ftypeRaw);
+        const baseType = ftypeRaw.replace(/\?|\[\]/g, '');
+
+        fields.push({ name: fname, type: baseType, isList, rawType: ftypeRaw, directives });
+      }
+
+      models[name] = { name, fields };
+    }
+
+    return models;
+  };
+
+  const handleVisualize = async () => {
+    try {
+      setIsVisualizing(true);
+
+      const models = parsePrismaSchema(visualizeText);
+      const modelNames = Object.keys(models);
+
+      if (modelNames.length === 0) {
+        throw new Error('No models found in schema');
+      }
+
+      // Layout in a grid
+      const cols = Math.ceil(Math.sqrt(modelNames.length));
+      const nodes = modelNames.map((name, i) => ({
+        id: name,
+        type: 'entity',
+        position: { x: (i % cols) * 660, y: Math.floor(i / cols) * 260 },
+        data: {
+          name,
+          attributes: models[name].fields.map((f) => ({ name: f.name, type: f.type })),
+          open: true,
+        },
+      }));
+
+    const edges: any[] = [];
+    const seenRelations = new Set<string>();
+    let ecount = 0;
+
+    for (const modelName of modelNames) {
+      for (const field of models[modelName].fields) {
+        if (!modelNames.includes(field.type)) continue;
+
+        const source = modelName;
+        const target = field.type;
+
+        // normalize so A→B and B→A are the same
+        const relationKey = [source, target].sort().join("--");
+
+        if (seenRelations.has(relationKey)) continue;
+        seenRelations.add(relationKey);
+
+        const relType = field.isList ? "1-m" : "1-1";
+
+        edges.push({
+          id: `edge-${relationKey}-${ecount++}`,
+          source,
+          target,
+          type: "relation",
+          data: { type: relType },
+        });
+      }
+    }
+
+
+      // Replace nodes and edges on the canvas
+      setNodes(nodes as any[]);
+      setEdges(edges as any[]);
+
+      setIsVisualizeOpen(false);
+      setVisualizeText('');
+    } catch (err: any) {
+      console.error(err);
+      toast.error('Failed to visualize schema: ' + (err.message || String(err)));
+    } finally {
+      setIsVisualizing(false);
+    }
+  };
+
+  // Visualize a raw schema string (used by Sparkles modal Visualize button)
+  const handleVisualizeSchemaString = async (schema: string) => {
+    try {
+      if (!schema) {
+        toast.error('No schema to visualize');
+        return;
+      }
+
+      setIsVisualizing(true);
+
+      const models = parsePrismaSchema(schema);
+      const modelNames = Object.keys(models);
+
+      if (modelNames.length === 0) {
+        throw new Error('No models found in schema');
+      }
+
+      const cols = Math.ceil(Math.sqrt(modelNames.length));
+      const nodes = modelNames.map((name, i) => ({
+        id: name,
+        type: 'entity',
+        position: { x: (i % cols) * 660, y: Math.floor(i / cols) * 260 },
+        data: {
+          name,
+          attributes: models[name].fields.map((f) => ({ name: f.name, type: f.type })),
+          open: true,
+        },
+      }));
+
+      const edges: any[] = [];
+      const seenRelations = new Set<string>();
+      let ecount = 0;
+
+      for (const modelName of modelNames) {
+        for (const field of models[modelName].fields) {
+          if (!modelNames.includes(field.type)) continue;
+
+          const source = modelName;
+          const target = field.type;
+          const relationKey = [source, target].sort().join("--");
+
+          if (seenRelations.has(relationKey)) continue;
+          seenRelations.add(relationKey);
+
+          const relType = field.isList ? "1-m" : "1-1";
+
+          edges.push({ id: `edge-${relationKey}-${ecount++}`, source, target, type: "relation", data: { type: relType } });
+        }
+      }
+
+      setNodes(nodes as any[]);
+      setEdges(edges as any[]);
+
+      setIsSparklesOpen(false);
+      setSparklesSchema('');
+
+      toast.success('Schema visualized');
+    } catch (err: any) {
+      console.error(err);
+      toast.error('Failed to visualize schema: ' + (err.message || String(err)));
+    } finally {
+      setIsVisualizing(false);
+    }
   };
 
   function openEditModal(nodeId: string, attrIndex: number) {
@@ -285,8 +481,7 @@ export default function Sidebar() {
           </div>
 
           <Button
-            // onClick={handleVisualize}
-            // disabled={isvisualizing}
+            onClick={() => setIsVisualizeOpen(true)}
             className="w-full text-white bg-prismaTeal hover:bg-prismadeepTeal gap-3 flex items-center justify-center mb-2"
           >
         
@@ -309,7 +504,10 @@ export default function Sidebar() {
               )}
             </Button>
             <Button
-              onClick={() => setIsSparklesOpen(true)}
+              onClick={() => {
+                if (!session) { loginModal.onOpen(); return; }
+                setIsSparklesOpen(true);
+              }}
               className="
               relative p-3 text-white
               bg-gradient-to-r from-purple-500 to-pink-500
@@ -335,18 +533,33 @@ export default function Sidebar() {
         actionLabel="Close"
         secondaryAction={copyToClipboard}
         secondaryActionLabel="Copy"
-        body={<div className="flex flex-col gap-2"> <textarea readOnly value={schemaText} className="w-full h-80 font-mono text-sm p-2 rounded border dark:bg-neutral-700 dark:text-white" /> <div className="text-xs text-neutral-500">You can copy the schema or close this preview.</div> </div>}
+        body={
+          <div className="flex flex-col gap-2 relative">
+            <button
+              title="Copy schema"
+              aria-label="Copy schema"
+              onClick={copyToClipboard}
+              className="absolute top-2 right-2 z-10 p-1 rounded bg-white hover:opacity-80 border"
+            >
+              <Copy size={16} />
+            </button>
+
+            <textarea readOnly value={schemaText} className="w-full h-80 font-mono text-sm p-2 rounded border dark:text-white" />
+            <div className="text-xs text-neutral-500">You can copy the schema or close this preview.</div>
+          </div>
+        }
       />
 
       <Modal
         isOpen={isSparklesOpen}
         onClose={closeSparklesModal}
         onSubmit={handleSparklesGenerate}
-        title="Prisma AI"
+        title="Generate Schema using AI"
         actionLabel={isSparklesGenerating ? 'Generating...' : 'Generate'}
         disabled={isSparklesGenerating}
-        secondaryAction={closeSparklesModal}
-        secondaryActionLabel="Close"
+        onVisualize={() => handleVisualizeSchemaString(sparklesSchema)}
+        onVisualizeLabel="Visualize"
+        visualizeDisabled={!sparklesSchema || isVisualizing}
         body={
           <div className="flex flex-col gap-4">
             <div className="grid grid-cols-1 gap-2">
@@ -355,13 +568,46 @@ export default function Sidebar() {
                 value={sparklesPrompt}
                 onChange={(e) => setSparklesPrompt(e.target.value)}
                 placeholder="Enter a short description of the desired Prisma schema"
-                className="w-full h-28 p-2 rounded border"
+                className="w-full h-28 p-2 rounded border bg-white"
               />
             </div>
 
-            <div className="grid grid-cols-1 gap-2">
+            <div className="grid grid-cols-1 gap-2 relative">
               <label className="text-sm font-medium">Generated Prisma Schema</label>
-              <textarea readOnly value={sparklesSchema} className="w-full h-64 font-mono text-sm p-2 rounded border dark:bg-neutral-700 dark:text-white" />
+              <button
+                title="Copy generated schema"
+                aria-label="Copy generated schema"
+                onClick={copySparklesToClipboard}
+                disabled={!sparklesSchema}
+                className="absolute top-8 right-2 z-10 p-1 rounded bg-white hover:opacity-80 border"
+              >
+                <Copy size={16} />
+              </button>
+              <textarea readOnly value={sparklesSchema} className="w-full h-40 font-mono text-sm p-2 rounded border bg-white" />
+            </div>
+          </div>
+        }
+      />
+
+      <Modal
+        isOpen={isVisualizeOpen}
+        onClose={() => setIsVisualizeOpen(false)}
+        onSubmit={handleVisualize}
+        title="Visualize Prisma Schema"
+        actionLabel={isVisualizing ? 'Visualizing...' : 'Visualize'}
+        disabled={isVisualizing}
+        secondaryAction={() => setIsVisualizeOpen(false)}
+        secondaryActionLabel="Cancel"
+        body={
+          <div className="flex flex-col gap-4">
+            <div className="grid grid-cols-1 gap-2">
+              <label className="text-sm font-medium">Prisma Schema</label>
+              <textarea
+                value={visualizeText}
+                onChange={(e) => setVisualizeText(e.target.value)}
+                placeholder="Paste Prisma schema here"
+                className="w-full h-48 p-2 rounded border bg-white"
+              />
             </div>
           </div>
         }

@@ -10,6 +10,8 @@ import { toPng } from 'html-to-image';
 import { Button } from '@/app/components/ui/Button';
 import { Download } from 'lucide-react';
 import { placeholderData } from '@/app/libs/constants';
+import { useSession } from 'next-auth/react';
+import useLoginModal from '@/app/hooks/useLoginModal';
 
 function downloadImage(dataUrl: string) {
     const a = document.createElement('a');
@@ -24,7 +26,12 @@ const imageHeight = 768;
 
 function DownloadButton() {
     const { getNodes, setEdges, setNodes } = useReactFlow();
+    const loginModal = useLoginModal();
+    const { data: session } = useSession();
+
     const onClick = () => {
+        if (!session) { loginModal.onOpen(); return; }
+
         const nodesBounds = getNodesBounds(getNodes());
         const viewport = getViewportForBounds(
             nodesBounds,
