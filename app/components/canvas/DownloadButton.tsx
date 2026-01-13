@@ -53,7 +53,7 @@ function DownloadButton() {
     function onUseExample() {
         const nodes = placeholderData.entities.map((entity, index) => ({
             id: `${index}`,
-            position: { x: 10 + index * 500, y: 10 + index * 500 },
+            position: { x: 375 + index * 500, y: 80 + index * 360 },
             data: { name: entity.name, attributes: entity.attributes, open: true },
             type: 'entity',
         }))
@@ -77,7 +77,7 @@ function DownloadButton() {
     return (
         <Panel position="top-right">
             <div className='flex gap-2 mt-20'>
-                <Button title="use-example" onClick={onUseExample}>
+                <Button title="see-example" onClick={onUseExample}>
                     See Example
                 </Button>
                 <Button title="download-image" onClick={onClick}>

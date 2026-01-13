@@ -13,21 +13,6 @@ function pluralize(name: string) {
   return name.endsWith('s') ? name + 'es' : name + 's';
 }
 
-function mapType(t: string) {
-  switch (String(t)) {
-    case 'string':
-      return 'String';
-    case 'number':
-      return 'Int';
-    case 'boolean':
-      return 'Boolean';
-    case 'Date':
-      return 'DateTime';
-    default:
-      return 'String';
-  }
-}
-
 export async function POST(req: Request) {
   try {
     const body = await req.json();
@@ -42,31 +27,34 @@ export async function POST(req: Request) {
       models[n.id] = { name: modelName, fields: [] };
 
       // add id field
-      models[n.id].fields.push('  id String @id @default(auto()) @map("_id") @db_.ObjectId');
+      models[n.id].fields.push('id String @id @default(auto()) @map("_id") @db.ObjectId');
 
       // attributes
       for (const attr of (n.attributes || [])) {
         const fieldName = attr.name || 'field';
         // Ensure we work with the Prisma type strings (like String, Int, DateTime, etc.)
-        const fieldType = String(attr.type || 'String');
+        let fieldType = String(attr.type || 'String');
 
-        // Determine optional marker: if required === true -> required (no '?'), otherwise optional ('?')
+        // LIST handling
+        const isList = attr?.constraint?.list === true || attr?.list === true;
+
+        if (isList) {
+          fieldType = `${fieldType}[]`;
+        }
+
+        // optional marker (NOT allowed for lists)
         const isRequired = Boolean(attr?.constraint?.required === true || attr?.required === true);
-        const optionalMarker = isRequired ? '' : '?';
+        const optionalMarker = isList ? '' : (isRequired ? '' : '?');
 
         // Handle default values and special DateTime @updatedAt
         let decorators: string[] = [];
+        
         const defVal = attr?.constraint?.value ?? attr?.default;
 
         if (defVal !== undefined && defVal !== null && String(defVal).length > 0) {
           const dv = String(defVal).trim();
-          // DateTime only accepts now() or @updatedAt as defaults per UX
           if (/^now\(\)$/.test(dv)) {
-            // @default(now())
             decorators.push('@default(now())');
-          } else if (/^@?updatedAt\(\)?$/i.test(dv)) {
-            // @updatedAt attribute
-            decorators.push('@updatedAt');
           } else if (/^Boolean$/i.test(fieldType) && /^true|false$/i.test(dv)) {
             decorators.push(`@default(${dv.toLowerCase()})`);
           } else if (/^Int$|^BigInt$|^Float$|^Decimal$/i.test(fieldType) && /^-?\d+$/.test(dv)) {
@@ -83,6 +71,16 @@ export async function POST(req: Request) {
         // unique
         if (attr?.constraint?.unique === true || attr?.unique === true || attr?.constraint?.type === 'unique') {
           decorators.push('@unique');
+        }
+
+        // updatedat
+        if (attr?.constraint?.updatedat === true || attr?.updatedat === true || attr?.constraint?.type === 'updatedat') {
+          decorators.push('@updatedAt');
+        }
+
+        //Is Id
+        if (attr?.constraint?.IsId === true || attr?.IsId === true || attr?.constraint?.type === 'Is Id') {
+          decorators.push('@db.ObjectId');
         }
 
         // join decorators
@@ -142,8 +140,8 @@ export async function POST(req: Request) {
   }
 
   datasource db {
-    provider = "sqlite"
-    url      = "file:./dev.db"
+    provider = "mongodb"
+    url      = env("DATABASE_URL")
   }
 
   `;
@@ -162,7 +160,6 @@ export async function POST(req: Request) {
 
       const schemaText = header + bodyText;
 
-      // Return schema text in response (no file writes)
       return NextResponse.json({ schema: schemaText });
     } catch (err: any) {
       console.error(err);

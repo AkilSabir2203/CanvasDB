@@ -8,7 +8,7 @@ export const placeholderData: GenerateFormData =
     "auth": true,
     "entities": [
         {
-            "name": "user",
+            "name": "User",
             "attributes": [
                 {
                     "name": "email",
@@ -28,7 +28,7 @@ export const placeholderData: GenerateFormData =
             ]
         },
         {
-            "name": "task",
+            "name": "Task",
             "attributes": [
                 {
                     "name": "description",
@@ -47,8 +47,8 @@ export const placeholderData: GenerateFormData =
     ],
     "relations": [
         {
-            "from": "user",
-            "to": "task",
+            "from": "User",
+            "to": "Task",
             "type": "1-m",
         }
     ]

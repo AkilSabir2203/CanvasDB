@@ -119,7 +119,7 @@ export default function EntityNode({ data, id }: NodeProps<EntityNodeProps>) {
         <>
             <Handle type="target" position={Position.Top} />
             <div className='border border-foreground rounded p-1 bg-background'>
-                <Input value={data.name} placeholder='Model Name' name="name" variant='underlined' onChange={onChange} />
+                <Input value={data.name} placeholder='Model Name' name="name" variant='underlined' onChange={onChange} className='bg-purple-100 rounded-sm pl-1' />
                 {data.open && <div className='mt-2 flex flex-col gap-2'>
                     {data.attributes.map((attr, index) => (
                         <div key={index} className='grid grid-cols-[2fr_1fr_0.25fr] gap-2'>

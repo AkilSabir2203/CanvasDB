@@ -1,5 +1,5 @@
 export type Attribute = "String" | "Boolean" | "Int" | "BigInt" | "Float" | "Decimal" | "Json" | "Bytes" | "DateTime" | 'String[]' | 'Boolean[]' | 'Int[]' | 'BigInt[]' | 'Float[]' | 'Decimal[]' | 'Json[]' | 'Bytes[]' | 'DateTime[]';
-export type ConstraintType = "required" | "unique" | "optional" | "default";
+export type ConstraintType = "required" | "list" | "unique" | "updatedat" | "Is Id" | "optional" | "default";
 export interface Entity {
   name: string;
   attributes: Array<{ name: string; type: Attribute, constraint?: {value?:string, type:ConstraintType }}>;
