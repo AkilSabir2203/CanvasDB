@@ -1,26 +1,28 @@
+import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/pages/api/auth/[...nextauth]";
 import prismadb from "@/app/libs/prismadb";
 import { serializeSchema, validateSchema } from "@/app/libs/schemaSerializer";
 import { Node, Edge } from "@xyflow/react";
 
-export async function POST(request: Request) {
+export async function POST(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
 
     if (!session?.user?.email) {
-      return new Response(JSON.stringify({ error: "Unauthorized" }), {
-        status: 401,
-      });
+      return NextResponse.json(
+        { error: "Unauthorized" },
+        { status: 401 }
+      );
     }
 
     const { schemaName, description, nodes, edges } = await request.json();
 
     if (!schemaName || !Array.isArray(nodes) || !Array.isArray(edges)) {
-      return new Response(
-        JSON.stringify({
+      return NextResponse.json(
+        {
           error: "Missing required fields: schemaName, nodes, edges",
-        }),
+        },
         { status: 400 }
       );
     }
@@ -31,17 +33,18 @@ export async function POST(request: Request) {
     });
 
     if (!user) {
-      return new Response(JSON.stringify({ error: "User not found" }), {
-        status: 404,
-      });
+      return NextResponse.json(
+        { error: "User not found" },
+        { status: 404 }
+      );
     }
 
     // Serialize schema data
     const { models, relations } = serializeSchema(nodes, edges);
 
     if (!validateSchema({ models, relations })) {
-      return new Response(
-        JSON.stringify({ error: "Invalid schema structure" }),
+      return NextResponse.json(
+        { error: "Invalid schema structure" },
         { status: 400 }
       );
     }
@@ -73,8 +76,8 @@ export async function POST(request: Request) {
         relations: {
           create: relations.map((relation: any, idx: number) => ({
             edgeId: relation.edgeId || `edge-${idx}`,
-            sourceModelId: "", // Will update after models are created
-            targetModelId: "", // Will update after models are created
+            sourceModelId: "", // patched later
+            targetModelId: "", // patched later
             relationType: relation.relationType,
           })),
         },
@@ -85,8 +88,8 @@ export async function POST(request: Request) {
       },
     });
 
-    // Update relations with correct model references
-    const nodeIdToModelId = new Map();
+    // Patch relations with correct model IDs
+    const nodeIdToModelId = new Map<string, string>();
     schema.models.forEach((model: any) => {
       nodeIdToModelId.set(model.nodeId, model.id);
     });
@@ -111,17 +114,17 @@ export async function POST(request: Request) {
       })
     );
 
-    return new Response(
-      JSON.stringify({
+    return NextResponse.json(
+      {
         message: "Schema saved successfully",
         schemaId: schema.id,
-      }),
+      },
       { status: 201 }
     );
   } catch (error) {
     console.error("Save schema error:", error);
-    return new Response(
-      JSON.stringify({ error: "Failed to save schema" }),
+    return NextResponse.json(
+      { error: "Failed to save schema" },
       { status: 500 }
     );
   }

@@ -1,15 +1,17 @@
+import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/pages/api/auth/[...nextauth]";
 import prismadb from "@/app/libs/prismadb";
 
-export async function GET(request: Request) {
+export async function GET(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
 
     if (!session?.user?.email) {
-      return new Response(JSON.stringify({ error: "Unauthorized" }), {
-        status: 401,
-      });
+      return NextResponse.json(
+        { error: "Unauthorized" },
+        { status: 401 }
+      );
     }
 
     const user = await prismadb.user.findUnique({
@@ -17,9 +19,10 @@ export async function GET(request: Request) {
     });
 
     if (!user) {
-      return new Response(JSON.stringify({ error: "User not found" }), {
-        status: 404,
-      });
+      return NextResponse.json(
+        { error: "User not found" },
+        { status: 404 }
+      );
     }
 
     // Fetch all schemas for the user
@@ -42,11 +45,11 @@ export async function GET(request: Request) {
       orderBy: { updatedAt: "desc" },
     });
 
-    return new Response(JSON.stringify({ schemas }), { status: 200 });
+    return NextResponse.json({ schemas }, { status: 200 });
   } catch (error) {
     console.error("List schemas error:", error);
-    return new Response(
-      JSON.stringify({ error: "Failed to list schemas" }),
+    return NextResponse.json(
+      { error: "Failed to list schemas" },
       { status: 500 }
     );
   }
