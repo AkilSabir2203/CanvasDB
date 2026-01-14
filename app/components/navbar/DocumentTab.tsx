@@ -26,6 +26,12 @@ const Search = () => {
 
     setIsManualSaving(true);
     try {
+      console.debug("[manual-save] payload", {
+        schemaId: currentSchemaId,
+        nodesLength: nodes.length,
+        edgesLength: edges.length,
+      });
+
       // Use autosave endpoint to update existing schema
       const response = await fetch(`/api/schemas/autosave/${currentSchemaId}`, {
         method: "PATCH",
@@ -36,13 +42,24 @@ const Search = () => {
         }),
       });
 
+      const responseBody = await response
+        .clone()
+        .json()
+        .catch(() => ({ message: "<non-JSON body>" }));
+
+      console.debug("[manual-save] response", {
+        status: response.status,
+        ok: response.ok,
+        body: responseBody,
+      });
+
       if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.error || "Failed to save schema");
+        throw new Error(responseBody.error || "Failed to save schema");
       }
 
       toast.success("Schema saved successfully!");
     } catch (error: any) {
+      if (error?.name === "AbortError") return; // ignore cancelled saves
       toast.error(error.message || "Failed to save schema");
     } finally {
       setIsManualSaving(false);

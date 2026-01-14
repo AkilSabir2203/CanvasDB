@@ -17,6 +17,7 @@ export const useAutosave = (
 ) => {
   const store = useSaveSchemaStore();
   const debounceTimer = useRef<NodeJS.Timeout | null>(null);
+  const abortControllerRef = useRef<AbortController | null>(null);
   const lastSavedState = useRef<{
     nodes: string;
     edges: string;
@@ -58,7 +59,20 @@ export const useAutosave = (
     isAutosavingRef.current = true;
     config.onSaving?.();
 
+    // Cancel any in-flight autosave (debounced calls should not surface errors)
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+    }
+    const controller = new AbortController();
+    abortControllerRef.current = controller;
+
     try {
+      console.debug("[autosave] payload", {
+        schemaId: store.currentSchemaId,
+        nodesLength: nodes.length,
+        edgesLength: edges.length,
+      });
+
       // Use the autosave endpoint specifically designed for this
       const response = await fetch(
         `/api/schemas/autosave/${store.currentSchemaId}`,
@@ -69,18 +83,32 @@ export const useAutosave = (
             nodes,
             edges,
           }),
+          signal: controller.signal,
         }
       );
 
+      const responseBody = await response
+        .clone()
+        .json()
+        .catch(() => ({ message: "<non-JSON body>" }));
+      console.debug("[autosave] response", {
+        status: response.status,
+        ok: response.ok,
+        body: responseBody,
+      });
+
       if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.error || "Autosave failed");
+        throw new Error(responseBody.error || "Autosave failed");
       }
 
       // Update last saved state
       lastSavedState.current = serializeState();
       config.onSaved?.();
     } catch (error: any) {
+      if (error?.name === "AbortError") {
+        // Ignore aborted autosave attempts (e.g., rapid debounce)
+        return;
+      }
       console.error("Autosave error:", error);
       config.onError?.(error.message);
       // Silently fail autosave errors to not disturb user

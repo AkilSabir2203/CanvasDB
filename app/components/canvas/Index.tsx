@@ -13,7 +13,6 @@ import SaveSchemaModal from '@/app/components/modals/SaveSchemaModal';
 import OpenDocumentModal from '@/app/components/modals/OpenDocumentModal';
 import useSaveSchemaModal from '@/app/hooks/useSaveSchemaModal';
 import { useAutosave } from '@/app/hooks/useAutosave';
-import { AutosaveStatus } from './AutosaveStatus';
 import useSaveSchemaStore from '@/app/hooks/useSaveSchemaStore';
 
 const initialNodes: EntityNodeProps[] = [
@@ -35,7 +34,7 @@ const nodeTypes = {
 export default function ErdBoard() {
     const canvasStore = useCanvasStore();
     const saveSchemaModal = useSaveSchemaModal();
-    const { currentSchemaId, isSaving } = useSaveSchemaStore();
+    const { currentSchemaId } = useSaveSchemaStore();
 
     // Read persisted state directly to determine if we should restore saved canvas
     let persistedNodes: EntityNodeProps[] | undefined = undefined;
@@ -115,7 +114,6 @@ export default function ErdBoard() {
                 onLoadSchema={handleLoadSchema}
             />
             <OpenDocumentModal onLoadSchema={handleLoadSchema} />
-            <AutosaveStatus isSaving={isSaving} />
         </div>
     )
 }
