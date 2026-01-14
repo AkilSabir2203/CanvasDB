@@ -24,6 +24,7 @@ model User {
   updatedAt       DateTime @updatedAt
 
   accounts Account[]
+  databaseSchemas DatabaseSchema[]
 }
 
 model Account {
@@ -43,4 +44,110 @@ model Account {
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([provider, providerAccountId])
+}
+
+model DatabaseSchema {
+  id          String @id @default(auto()) @map("_id") @db.ObjectId
+  name        String
+  description String?
+  userId      String @db.ObjectId
+  user        User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  // Schema metadata
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  lastModifiedBy String?
+  
+  // Schema content - models and relations
+  models      SchemaModel[]
+  relations   SchemaRelation[]
+  
+  @@index([userId])
+}
+
+model SchemaModel {
+  id        String @id @default(auto()) @map("_id") @db.ObjectId
+  schemaId  String @db.ObjectId
+  schema    DatabaseSchema @relation(fields: [schemaId], references: [id], onDelete: Cascade)
+  
+  // ReactFlow node reference
+  nodeId    String
+  
+  // Model details
+  name      String
+  position  ModelPosition
+  
+  // Fields in the model
+  fields    SchemaField[]
+  
+  // Relations where this is the source
+  sourceRelations SchemaRelation[] @relation("sourceModel")
+  // Relations where this is the target
+  targetRelations SchemaRelation[] @relation("targetModel")
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  @@unique([schemaId, nodeId])
+  @@index([schemaId])
+}
+
+type ModelPosition {
+  x Float
+  y Float
+}
+
+model SchemaField {
+  id        String @id @default(auto()) @map("_id") @db.ObjectId
+  modelId   String @db.ObjectId
+  model     SchemaModel @relation(fields: [modelId], references: [id], onDelete: Cascade)
+  
+  // Field details
+  name      String
+  type      String // String, Int, Boolean, DateTime, etc.
+  
+  // Field modifiers
+  isOptional Boolean @default(false)
+  isList    Boolean @default(false)
+  
+  // Constraints and attributes
+  constraints FieldConstraint[]
+  defaultValue String?
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  @@index([modelId])
+}
+
+type FieldConstraint {
+  type      String // "id", "unique", "default", "updatedAt", etc.
+  value     String?
+}
+
+model SchemaRelation {
+  id              String @id @default(auto()) @map("_id") @db.ObjectId
+  schemaId        String @db.ObjectId
+  schema          DatabaseSchema @relation(fields: [schemaId], references: [id], onDelete: Cascade)
+  
+  // ReactFlow edge reference
+  edgeId          String
+  
+  // Related models
+  sourceModelId   String @db.ObjectId
+  sourceModel     SchemaModel @relation("sourceModel", fields: [sourceModelId], references: [id], onDelete: Cascade)
+  
+  targetModelId   String @db.ObjectId
+  targetModel     SchemaModel @relation("targetModel", fields: [targetModelId], references: [id], onDelete: Cascade)
+  
+  // Relation type
+  relationType    String // "1-1", "1-m", "m-1", "m-n"
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  @@index([schemaId])
+  @@index([sourceModelId])
+  @@index([targetModelId])
+  @@unique([schemaId, sourceModelId, targetModelId])
 }

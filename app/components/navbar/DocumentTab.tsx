@@ -2,10 +2,12 @@
 
 import { Plus, File, ChevronDown } from "lucide-react";
 import useCreateSchemaModal from "@/app/hooks/useCreateSchemaModal";
+import useOpenDocumentModal from "@/app/hooks/useOpenDocumentModal";
 
 const Search = () => {
   const fileName = "Untitled";
   const createSchemaModal = useCreateSchemaModal();
+  const openDocumentModal = useOpenDocumentModal();
 
   return (
       <div className="flex flex-row items-center gap-2">
@@ -38,7 +40,7 @@ const Search = () => {
             transition shadow-sm hover:shadow-md border-[1px] border-neutral-200 cursor-pointer
           "
           onClick={() => {
-            console.log("Switch file");
+            openDocumentModal.onOpen();
           }}
         >
           <File size={18} />

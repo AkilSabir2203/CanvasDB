@@ -1,5 +1,5 @@
 "use client"
-import { addEdge, Background, BackgroundVariant, MiniMap, ReactFlow, useEdgesState, useNodesState } from '@xyflow/react';
+import { addEdge, Background, BackgroundVariant, MiniMap, ReactFlow, useEdgesState, useNodesState, type Node, type Edge } from '@xyflow/react';
 
 import '@xyflow/react/dist/style.css';
 import React, { useCallback } from 'react';
@@ -9,6 +9,9 @@ import Toolbar from './Toolbar';
 import DownloadButton from './DownloadButton';
 import  Sidebar  from "./Sidebar";
 import CreateSchemaModal from '@/app/components/modals/CreateSchemaModal';
+import SaveSchemaModal from '@/app/components/modals/SaveSchemaModal';
+import OpenDocumentModal from '@/app/components/modals/OpenDocumentModal';
+import useSaveSchemaModal from '@/app/hooks/useSaveSchemaModal';
 
 const initialNodes: EntityNodeProps[] = [
     { id: '1', position: { x: 410, y:100 }, data: { name: '', attributes: [{ name: "", type: "String" }], open: true }, type: 'entity' },
@@ -28,6 +31,7 @@ const nodeTypes = {
 
 export default function ErdBoard() {
     const canvasStore = useCanvasStore();
+    const saveSchemaModal = useSaveSchemaModal();
 
     // Read persisted state directly to determine if we should restore saved canvas
     let persistedNodes: EntityNodeProps[] | undefined = undefined;
@@ -69,6 +73,11 @@ export default function ErdBoard() {
         setEdges(newEdges);
     }, [setNodes, setEdges]);
 
+    const handleLoadSchema = useCallback((newNodes: Node[], newEdges: Edge[]) => {
+        setNodes(newNodes as any);
+        setEdges(newEdges as any);
+    }, [setNodes, setEdges]);
+
     return (
         <div className='relative w-full grow h-[100vh] rounded'>
             <ReactFlow
@@ -88,6 +97,14 @@ export default function ErdBoard() {
                 <MiniMap />
             </ReactFlow>
             <CreateSchemaModal onSchemaCreate={handleSchemaCreate} />
+            <SaveSchemaModal 
+                isOpen={saveSchemaModal.isOpen} 
+                onClose={saveSchemaModal.onClose}
+                nodes={nodes}
+                edges={edges}
+                onLoadSchema={handleLoadSchema}
+            />
+            <OpenDocumentModal onLoadSchema={handleLoadSchema} />
         </div>
     )
 }
