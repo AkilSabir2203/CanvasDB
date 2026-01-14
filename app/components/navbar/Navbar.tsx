@@ -6,6 +6,7 @@ import UserMenu from "./UserMenu";
 import { SafeUser } from "@/app/types";
 import React from "react";
 import { ModeToggle } from "@/app/components/ui/ThemeToggler";
+import DocumentTab from "./DocumentTab";
 
 interface NavbarProps {
     currentUser?: SafeUser | null;
@@ -20,6 +21,7 @@ const Navbar: React.FC<NavbarProps> = ({
                 <Container>
                     <div className="flex flex-row items-center justify-between gap-3 md:gap-0">
                         <Logo />
+                        <DocumentTab />
                         <div className="flex flex-row gap-3">
                             <UserMenu currentUser={currentUser} />
                             <ModeToggle />

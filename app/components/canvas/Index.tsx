@@ -8,6 +8,7 @@ import RelationEdge, { RelationEdgeProps } from './RelationEdge';
 import Toolbar from './Toolbar';
 import DownloadButton from './DownloadButton';
 import  Sidebar  from "./Sidebar";
+import CreateSchemaModal from '@/app/components/modals/CreateSchemaModal';
 
 const initialNodes: EntityNodeProps[] = [
     { id: '1', position: { x: 410, y:100 }, data: { name: '', attributes: [{ name: "", type: "String" }], open: true }, type: 'entity' },
@@ -63,6 +64,11 @@ export default function ErdBoard() {
         [setEdges],
     )
 
+    const handleSchemaCreate = useCallback((newNodes: any[], newEdges: any[]) => {
+        setNodes(newNodes);
+        setEdges(newEdges);
+    }, [setNodes, setEdges]);
+
     return (
         <div className='relative w-full grow h-[100vh] rounded'>
             <ReactFlow
@@ -81,6 +87,7 @@ export default function ErdBoard() {
                 <Toolbar />
                 <MiniMap />
             </ReactFlow>
+            <CreateSchemaModal onSchemaCreate={handleSchemaCreate} />
         </div>
     )
 }
