@@ -12,6 +12,9 @@ import CreateSchemaModal from '@/app/components/modals/CreateSchemaModal';
 import SaveSchemaModal from '@/app/components/modals/SaveSchemaModal';
 import OpenDocumentModal from '@/app/components/modals/OpenDocumentModal';
 import useSaveSchemaModal from '@/app/hooks/useSaveSchemaModal';
+import { useAutosave } from '@/app/hooks/useAutosave';
+import { AutosaveStatus } from './AutosaveStatus';
+import useSaveSchemaStore from '@/app/hooks/useSaveSchemaStore';
 
 const initialNodes: EntityNodeProps[] = [
     { id: '1', position: { x: 410, y:100 }, data: { name: '', attributes: [{ name: "", type: "String" }], open: true }, type: 'entity' },
@@ -32,6 +35,7 @@ const nodeTypes = {
 export default function ErdBoard() {
     const canvasStore = useCanvasStore();
     const saveSchemaModal = useSaveSchemaModal();
+    const { currentSchemaId, isSaving } = useSaveSchemaStore();
 
     // Read persisted state directly to determine if we should restore saved canvas
     let persistedNodes: EntityNodeProps[] | undefined = undefined;
@@ -53,6 +57,12 @@ export default function ErdBoard() {
 
     const [nodes, setNodes, onNodesChange] = useNodesState(persistedNodes ?? initialNodes);
     const [edges, setEdges, onEdgesChange] = useEdgesState(persistedEdges ?? initialEdges);
+
+    // Initialize autosave with nodes and edges
+    useAutosave(nodes, edges, {
+        enabled: !!currentSchemaId, // Only autosave if a schema is loaded
+        debounceMs: 3000, // Autosave every 3 seconds of inactivity
+    });
 
     // Sync react-flow changes into the persisted store
     React.useEffect(() => {
@@ -105,6 +115,7 @@ export default function ErdBoard() {
                 onLoadSchema={handleLoadSchema}
             />
             <OpenDocumentModal onLoadSchema={handleLoadSchema} />
+            <AutosaveStatus isSaving={isSaving} />
         </div>
     )
 }
