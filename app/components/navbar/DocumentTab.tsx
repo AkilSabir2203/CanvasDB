@@ -1,16 +1,79 @@
 "use client";
 
-import { Plus, File, ChevronDown } from "lucide-react";
+import { Plus, File, ChevronDown, Save, Loader2 } from "lucide-react";
+import { useState } from "react";
 import useCreateSchemaModal from "@/app/hooks/useCreateSchemaModal";
 import useOpenDocumentModal from "@/app/hooks/useOpenDocumentModal";
+import useSaveSchemaStore from "@/app/hooks/useSaveSchemaStore";
+import useCanvasStore from "@/app/hooks/useCanvasStore";
+import toast from "react-hot-toast";
 
 const Search = () => {
   const fileName = "Untitled";
   const createSchemaModal = useCreateSchemaModal();
   const openDocumentModal = useOpenDocumentModal();
+  const { currentSchemaId, isSaving: isAutosaving } = useSaveSchemaStore();
+  const { nodes, edges } = useCanvasStore();
+  const [isManualSaving, setIsManualSaving] = useState(false);
+
+  const isSaving = isAutosaving || isManualSaving;
+
+  const handleSave = async () => {
+    if (!currentSchemaId) {
+      toast.error("No schema loaded. Please create a schema first.");
+      return;
+    }
+
+    setIsManualSaving(true);
+    try {
+      // Use autosave endpoint to update existing schema
+      const response = await fetch(`/api/schemas/autosave/${currentSchemaId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          nodes,
+          edges,
+        }),
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || "Failed to save schema");
+      }
+
+      toast.success("Schema saved successfully!");
+    } catch (error: any) {
+      toast.error(error.message || "Failed to save schema");
+    } finally {
+      setIsManualSaving(false);
+    }
+  };
 
   return (
       <div className="flex flex-row items-center gap-2">
+        {/* Inner pill: Save/AutoSave */}
+        <button
+          className="
+            flex items-center gap-2
+            px-4 py-2
+            rounded-full
+          hover:bg-purple-500
+            text-sm font-semibold
+            bg-purple-600
+            text-white
+            transition shadow-sm hover:shadow-md border-[1px] border-neutral-200 cursor-pointer
+            disabled:opacity-50 disabled:cursor-not-allowed
+          "
+          onClick={handleSave}
+          disabled={!currentSchemaId || isSaving}
+        >
+          {isSaving ? (
+            <Loader2 size={18} className="h-6 w-6 text-white rounded-sm animate-spin" />
+          ) : (
+            <Save size={18} className="h-6 w-6 text-white rounded-sm" />
+          )}
+          {isSaving ? "Saving..." : "Save"}
+        </button>
         {/* Inner pill: Create */}
         <button
           className="
