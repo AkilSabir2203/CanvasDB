@@ -27,7 +27,7 @@ const OpenDocumentModal: React.FC<OpenDocumentModalProps> = ({
   onLoadSchema,
 }) => {
   const { isOpen, onClose } = useOpenDocumentModal();
-  const { loadSchema, isLoading, schemas } = useSaveSchemaStore();
+  const { loadSchema, isLoading, schemas, setCurrentSchemaId } = useSaveSchemaStore();
   const [localSchemas, setLocalSchemas] = useState<SchemaItem[]>([]);
   const [selectedSchemaId, setSelectedSchemaId] = useState<string | null>(null);
   const [isLoadingSchema, setIsLoadingSchema] = useState(false);
@@ -57,6 +57,7 @@ const OpenDocumentModal: React.FC<OpenDocumentModalProps> = ({
 
       try {
         const data = await loadSchema(schemaId);
+        setCurrentSchemaId(schemaId);
         onLoadSchema(data.nodes, data.edges);
         toast.success(`Loaded: ${data.schema.name}`);
         onClose();
@@ -65,7 +66,7 @@ const OpenDocumentModal: React.FC<OpenDocumentModalProps> = ({
         setIsLoadingSchema(false);
       }
     },
-    [loadSchema, onLoadSchema, onClose]
+    [loadSchema, onLoadSchema, onClose, setCurrentSchemaId]
   );
 
   const formatDate = (dateString: string) => {

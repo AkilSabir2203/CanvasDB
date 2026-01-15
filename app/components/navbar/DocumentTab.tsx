@@ -2,21 +2,46 @@
 
 import { Plus, File, ChevronDown, Save, Loader2 } from "lucide-react";
 import { useState } from "react";
+import { useSession } from "next-auth/react";
 import useCreateSchemaModal from "@/app/hooks/useCreateSchemaModal";
 import useOpenDocumentModal from "@/app/hooks/useOpenDocumentModal";
+import useLoginModal from "@/app/hooks/useLoginModal";
 import useSaveSchemaStore from "@/app/hooks/useSaveSchemaStore";
 import useCanvasStore from "@/app/hooks/useCanvasStore";
 import toast from "react-hot-toast";
 
 const Search = () => {
-  const fileName = "Untitled";
+  const { data: session } = useSession();
   const createSchemaModal = useCreateSchemaModal();
   const openDocumentModal = useOpenDocumentModal();
-  const { currentSchemaId, isSaving: isAutosaving } = useSaveSchemaStore();
+  const loginModal = useLoginModal();
+  const { currentSchemaId, schemas, isSaving: isAutosaving } = useSaveSchemaStore();
   const { nodes, edges } = useCanvasStore();
   const [isManualSaving, setIsManualSaving] = useState(false);
 
+  // Get the current schema name
+  const currentSchema = schemas.find((schema) => schema.id === currentSchemaId);
+  const fileName = currentSchema?.name || "Untitled";
+
   const isSaving = isAutosaving || isManualSaving;
+
+  const handleCreateClick = () => {
+    if (!session?.user) {
+      toast.error("Please login to create a schema");
+      loginModal.onOpen();
+      return;
+    }
+    createSchemaModal.onOpen();
+  };
+
+  const handleOpenClick = () => {
+    if (!session?.user) {
+      toast.error("Please login to open documents");
+      loginModal.onOpen();
+      return;
+    }
+    openDocumentModal.onOpen();
+  };
 
   const handleSave = async () => {
     if (!currentSchemaId) {
@@ -101,9 +126,7 @@ const Search = () => {
             text-sm font-semibold
             transition shadow-sm hover:shadow-md border-[1px] border-neutral-200 cursor-pointer
           "
-          onClick={() => {
-            createSchemaModal.onOpen();
-          }}
+          onClick={handleCreateClick}
         >
           <Plus size={18} className="h-6 w-6 text-white rounded-full bg-purple-600" />
           Create
@@ -119,9 +142,7 @@ const Search = () => {
             text-sm font-semibold
             transition shadow-sm hover:shadow-md border-[1px] border-neutral-200 cursor-pointer
           "
-          onClick={() => {
-            openDocumentModal.onOpen();
-          }}
+          onClick={handleOpenClick}
         >
           <File size={18} />
           {fileName}

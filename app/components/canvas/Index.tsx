@@ -57,10 +57,10 @@ export default function ErdBoard() {
     const [nodes, setNodes, onNodesChange] = useNodesState(persistedNodes ?? initialNodes);
     const [edges, setEdges, onEdgesChange] = useEdgesState(persistedEdges ?? initialEdges);
 
-    // Initialize autosave with nodes and edges
+    // Initialize autosave with nodes and edges - DISABLED, users must save manually
     useAutosave(nodes, edges, {
-        enabled: !!currentSchemaId, // Only autosave if a schema is loaded
-        debounceMs: 3000, // Autosave every 3 seconds of inactivity
+        enabled: false, // Autosave disabled - manual save only
+        debounceMs: 3000,
     });
 
     // Sync react-flow changes into the persisted store
