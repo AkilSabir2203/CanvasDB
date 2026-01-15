@@ -2,7 +2,8 @@
 import { addEdge, Background, BackgroundVariant, MiniMap, ReactFlow, useEdgesState, useNodesState, type Node, type Edge } from '@xyflow/react';
 
 import '@xyflow/react/dist/style.css';
-import React, { useCallback } from 'react';
+import React, { useCallback, useEffect, useRef } from 'react';
+import { useSession } from 'next-auth/react';
 import EntityNode, { EntityNodeProps } from './EntityNode';
 import RelationEdge, { RelationEdgeProps } from './RelationEdge';
 import Toolbar from './Toolbar';
@@ -32,9 +33,11 @@ const nodeTypes = {
 };
 
 export default function ErdBoard() {
+    const { data: session, status } = useSession();
     const canvasStore = useCanvasStore();
     const saveSchemaModal = useSaveSchemaModal();
-    const { currentSchemaId } = useSaveSchemaStore();
+    const { currentSchemaId, setCurrentSchemaId } = useSaveSchemaStore();
+    const wasAuthenticatedRef = useRef<boolean>(false);
 
     // Read persisted state directly to determine if we should restore saved canvas
     let persistedNodes: EntityNodeProps[] | undefined = undefined;
@@ -56,6 +59,41 @@ export default function ErdBoard() {
 
     const [nodes, setNodes, onNodesChange] = useNodesState(persistedNodes ?? initialNodes);
     const [edges, setEdges, onEdgesChange] = useEdgesState(persistedEdges ?? initialEdges);
+
+    // Reset editor on logout
+    useEffect(() => {
+        // Track authentication state
+        const isAuthenticated = !!session?.user;
+        
+        // If was authenticated but now is not (logout happened)
+        if (wasAuthenticatedRef.current && !isAuthenticated && status === 'unauthenticated') {
+            console.log('[ErdBoard] User logged out - resetting editor');
+            
+            // Clear canvas
+            setNodes([]);
+            setEdges([]);
+            
+            // Clear stores
+            canvasStore.resetToEmpty();
+            setCurrentSchemaId(null);
+            
+            // Clear pending save if any
+            if (typeof window !== 'undefined') {
+                try {
+                    // We're clearing the canvas, so also clear any pending saves
+                    const pendingSaveStore = localStorage.getItem('pending-save-storage');
+                    if (pendingSaveStore) {
+                        localStorage.removeItem('pending-save-storage');
+                    }
+                } catch (e) {
+                    // Ignore storage errors
+                }
+            }
+        }
+        
+        // Update ref for next render
+        wasAuthenticatedRef.current = isAuthenticated;
+    }, [session?.user, status, setNodes, setEdges, canvasStore, setCurrentSchemaId]);
 
     // Initialize autosave with nodes and edges - DISABLED, users must save manually
     useAutosave(nodes, edges, {

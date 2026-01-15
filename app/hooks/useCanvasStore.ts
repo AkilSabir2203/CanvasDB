@@ -10,6 +10,7 @@ interface CanvasState {
   setNodes: (nodes: Node[]) => void;
   setEdges: (edges: Edge[]) => void;
   reset: () => void;
+  resetToEmpty: () => void;
 }
 
 const useCanvasStore = create<CanvasState>()(
@@ -20,6 +21,7 @@ const useCanvasStore = create<CanvasState>()(
       setNodes: (nodes: Node[]) => set({ nodes }),
       setEdges: (edges: Edge[]) => set({ edges }),
       reset: () => set({ nodes: [], edges: [] }),
+      resetToEmpty: () => set({ nodes: [], edges: [] }),
     }),
     {
       name: "canvas-storage-v1",
