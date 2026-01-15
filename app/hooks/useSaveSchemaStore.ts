@@ -74,7 +74,7 @@ const useSaveSchemaStore = create<SaveSchemaStore>((set, get) => ({
 
       if (!response.ok) {
         const error = await response.json();
-        throw new Error(error.error || "Failed to load schema");
+        throw new Error(error.error);
       }
 
       const data = await response.json();
@@ -92,7 +92,7 @@ const useSaveSchemaStore = create<SaveSchemaStore>((set, get) => ({
 
       if (!response.ok) {
         const error = await response.json();
-        throw new Error(error.error || "Failed to load schemas");
+        throw new Error(error.error);
       }
 
       const data = await response.json();

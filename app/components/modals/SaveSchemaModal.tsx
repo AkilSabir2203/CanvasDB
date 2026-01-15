@@ -90,7 +90,7 @@ const SaveSchemaModal: React.FC<SaveSchemaModalProps> = ({
       toast.success(`Loaded schema: ${data.schema.name}`);
       onClose();
     } catch (error: any) {
-      toast.error(error.message || "Failed to load schema");
+      toast.error(error.message);
     }
   }, [selectedSchemaId, loadSchema, onLoadSchema, onClose]);
 

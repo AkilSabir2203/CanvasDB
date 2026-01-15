@@ -118,7 +118,7 @@ export async function GET(
     });
     return NextResponse.json(
       { 
-        error: "Failed to load schema",
+        error: null,
         details: process.env.NODE_ENV === "development" ? error.message : undefined,
       },
       { status: 500 }
