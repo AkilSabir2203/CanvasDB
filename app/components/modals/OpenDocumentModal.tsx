@@ -58,10 +58,10 @@ const OpenDocumentModal: React.FC<OpenDocumentModalProps> = ({
       setIsLoadingSchema(true);
 
       try {
-        const data = await loadSchema(schemaId);
+        const schemaData = await loadSchema(schemaId);
         setCurrentSchemaId(schemaId);
-        onLoadSchema(data.nodes, data.edges);
-        toast.success(`Loaded: ${data.schema.name}`);
+        onLoadSchema(schemaData.nodes, schemaData.edges);
+        toast.success(`Loaded: ${schemaData.schema?.name || "Schema"}`);
         // Automatically close modal after successful load
         onClose();
       } catch (error: any) {
