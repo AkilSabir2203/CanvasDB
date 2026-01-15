@@ -206,7 +206,7 @@ const CreateSchemaModal: React.FC<CreateSchemaModalProps> = ({ onSchemaCreate })
       title={step === "select" ? "Create New Schema" : `Create Schema: ${selectedOption === "blank" ? "Blank" : "Example"}`}
       body={body}
       actionLabel={step === "select" ? "Next" : "Create & Save"}
-      disabled={step === "select" ? !selectedOption : !schemaName.trim() || isLoading}
+      disabled={step !== "select" && (!schemaName.trim() || isLoading)}
       secondaryAction={step === "select" ? onClose : handleBackToSelect}
       secondaryActionLabel={step === "select" ? "Cancel" : "Back"}
     />

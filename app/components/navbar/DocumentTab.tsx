@@ -27,7 +27,6 @@ const Search = () => {
 
   const handleCreateClick = () => {
     if (!session?.user) {
-      toast.error("Please login to create a schema");
       loginModal.onOpen();
       return;
     }
@@ -36,7 +35,6 @@ const Search = () => {
 
   const handleOpenClick = () => {
     if (!session?.user) {
-      toast.error("Please login to open documents");
       loginModal.onOpen();
       return;
     }
@@ -104,7 +102,7 @@ const Search = () => {
             bg-purple-600
             text-white
             transition shadow-sm hover:shadow-md border-[1px] border-neutral-200 cursor-pointer
-            disabled:opacity-50 disabled:cursor-not-allowed
+            disabled:opacity-50 disabled:cursor-not-allowed dark:border-none
           "
           onClick={handleSave}
           disabled={!currentSchemaId || isSaving}
@@ -123,8 +121,8 @@ const Search = () => {
             px-4 py-2
             rounded-full
           hover:bg-gray-50
-            text-sm font-semibold
-            transition shadow-sm hover:shadow-md border-[1px] border-neutral-200 cursor-pointer
+            text-sm font-semibold dark:hover:bg-neutral-800
+            transition shadow-sm hover:shadow-md border-[1px] border-neutral-200 cursor-pointer dark:border-[1px]
           "
           onClick={handleCreateClick}
         >
@@ -138,9 +136,9 @@ const Search = () => {
             flex items-center gap-2
             px-4 py-2
             rounded-full
-            bg-gray-100 hover:bg-gray-50
+            bg-gray-100 hover:bg-gray-50 dark:bg-gray-500 dark:hover:bg-gray-600
             text-sm font-semibold
-            transition shadow-sm hover:shadow-md border-[1px] border-neutral-200 cursor-pointer
+            transition shadow-sm hover:shadow-md border-[1px] border-neutral-200 cursor-pointer dark:border-[2px]
           "
           onClick={handleOpenClick}
         >

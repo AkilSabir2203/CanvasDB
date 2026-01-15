@@ -62,7 +62,7 @@ const OpenDocumentModal: React.FC<OpenDocumentModalProps> = ({
         toast.success(`Loaded: ${data.schema.name}`);
         onClose();
       } catch (error: any) {
-        toast.error(error.message || "Failed to load schema");
+        toast.error("Failed to load schema");
         setIsLoadingSchema(false);
       }
     },
