@@ -56,25 +56,45 @@ export async function GET(
     }
 
     // Transform relations to use nodeId instead of modelId
-    const transformedRelations = schema.relations.map((rel: any) => {
-      const sourceModel = schema.models.find(
-        (m: any) => m.id === rel.sourceModelId
-      );
-      const targetModel = schema.models.find(
-        (m: any) => m.id === rel.targetModelId
-      );
+    const transformedRelations = (schema.relations || [])
+      .map((rel: any) => {
+        const sourceModel = schema.models.find(
+          (m: any) => m.id === rel.sourceModelId
+        );
+        const targetModel = schema.models.find(
+          (m: any) => m.id === rel.targetModelId
+        );
 
-      return {
-        ...rel,
-        sourceNodeId: sourceModel?.nodeId,
-        targetNodeId: targetModel?.nodeId,
-      };
-    });
+        if (!sourceModel || !targetModel) {
+          console.warn("[load-schema] Skipping relation with missing models:", {
+            relationId: rel.id,
+            sourceModelId: rel.sourceModelId,
+            targetModelId: rel.targetModelId,
+          });
+          return null;
+        }
+
+        return {
+          edgeId: rel.edgeId || rel.id, // Fallback to relation ID if edgeId missing
+          sourceNodeId: sourceModel.nodeId,
+          targetNodeId: targetModel.nodeId,
+          relationType: rel.relationType || "1-m",
+        };
+      })
+      .filter((rel: any) => rel !== null); // Remove null entries
 
     // Deserialize back to React Flow format
     const { nodes, edges } = deserializeSchema({
-      models: schema.models,
-      relations: transformedRelations,
+      models: schema.models || [],
+      relations: transformedRelations || [],
+    });
+
+    console.log("[load-schema] Deserialized schema:", {
+      schemaId: schema.id,
+      nodesCount: nodes.length,
+      edgesCount: edges.length,
+      nodeIds: nodes.map(n => n.id),
+      edgeIds: edges.map(e => e.id),
     });
 
     return NextResponse.json(
@@ -91,10 +111,16 @@ export async function GET(
       },
       { status: 200 }
     );
-  } catch (error) {
-    console.error("Load schema error:", error);
+  } catch (error: any) {
+    console.error("[load-schema] Load schema error:", {
+      message: error.message,
+      stack: error.stack,
+    });
     return NextResponse.json(
-      { error: "Failed to load schema" },
+      { 
+        error: "Failed to load schema",
+        details: process.env.NODE_ENV === "development" ? error.message : undefined,
+      },
       { status: 500 }
     );
   }

@@ -42,77 +42,78 @@ export async function POST(request: NextRequest) {
     // Serialize schema data
     const { models, relations } = serializeSchema(nodes, edges);
 
-    if (!validateSchema({ models, relations })) {
+    const isValid = validateSchema({ models, relations });
+    if (!isValid) {
+      console.error("[save] Invalid schema structure:", {
+        models,
+        relations,
+      });
       return NextResponse.json(
         { error: "Invalid schema structure" },
         { status: 400 }
       );
     }
 
-    // Create schema document with nested data
+    console.log("[save] Creating schema:", {
+      name: schemaName,
+      modelsCount: models.length,
+      relationsCount: relations.length,
+    });
+
+    // Create schema document first
     const schema = await (prismadb as any).databaseSchema.create({
       data: {
         name: schemaName,
         description: description || null,
         userId: user.id,
         lastModifiedBy: user.email,
-        models: {
-          create: models.map((model: any) => ({
-            nodeId: model.nodeId,
-            name: model.name,
-            position: model.position,
-            fields: {
-              create: model.fields.map((field: any) => ({
-                name: field.name,
-                type: field.type,
-                isOptional: field.isOptional,
-                isList: field.isList,
-                constraints: field.constraints,
-                defaultValue: field.defaultValue,
-              })),
-            },
-          })),
-        },
-        relations: {
-          create: relations.map((relation: any, idx: number) => ({
-            edgeId: relation.edgeId || `edge-${idx}`,
-            sourceModelId: "", // patched later
-            targetModelId: "", // patched later
-            relationType: relation.relationType,
-          })),
-        },
-      },
-      include: {
-        models: { include: { fields: true } },
-        relations: true,
       },
     });
 
-    // Patch relations with correct model IDs
+    // Create models with fields
     const nodeIdToModelId = new Map<string, string>();
-    schema.models.forEach((model: any) => {
-      nodeIdToModelId.set(model.nodeId, model.id);
-    });
-
-    await Promise.all(
-      relations.map((relation: any, idx: number) => {
-        const sourceModelId = nodeIdToModelId.get(relation.sourceNodeId);
-        const targetModelId = nodeIdToModelId.get(relation.targetNodeId);
-
-        if (!sourceModelId || !targetModelId) return Promise.resolve();
-
-        return (prismadb as any).schemaRelation.updateMany({
-          where: {
-            schemaId: schema.id,
-            edgeId: relation.edgeId || `edge-${idx}`,
+    for (const model of models) {
+      const createdModel = await (prismadb as any).schemaModel.create({
+        data: {
+          schemaId: schema.id,
+          nodeId: model.nodeId,
+          name: model.name,
+          position: model.position,
+          fields: {
+            create: model.fields.map((field: any) => ({
+              name: field.name,
+              type: field.type,
+              isOptional: field.isOptional ?? true,
+              isList: field.isList ?? false,
+              constraints: field.constraints || [],
+              defaultValue: field.defaultValue || null,
+            })),
           },
-          data: {
-            sourceModelId,
-            targetModelId,
-          },
-        });
-      })
-    );
+        },
+      });
+      nodeIdToModelId.set(model.nodeId, createdModel.id);
+    }
+
+    // Create relations with resolved model IDs
+    for (const relation of relations) {
+      const sourceModelId = nodeIdToModelId.get(relation.sourceNodeId);
+      const targetModelId = nodeIdToModelId.get(relation.targetNodeId);
+
+      if (!sourceModelId || !targetModelId) {
+        console.error("[save] Missing model IDs for relation:", relation);
+        continue;
+      }
+
+      await (prismadb as any).schemaRelation.create({
+        data: {
+          schemaId: schema.id,
+          edgeId: relation.edgeId,
+          sourceModelId,
+          targetModelId,
+          relationType: relation.relationType,
+        },
+      });
+    }
 
     return NextResponse.json(
       {
@@ -121,10 +122,16 @@ export async function POST(request: NextRequest) {
       },
       { status: 201 }
     );
-  } catch (error) {
-    console.error("Save schema error:", error);
+  } catch (error: any) {
+    console.error("[save] Save schema error:", {
+      message: error.message,
+      stack: error.stack,
+    });
     return NextResponse.json(
-      { error: "Failed to save schema" },
+      { 
+        error: "Failed to save schema",
+        details: process.env.NODE_ENV === "development" ? error.message : undefined,
+      },
       { status: 500 }
     );
   }

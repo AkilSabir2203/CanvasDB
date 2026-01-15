@@ -70,12 +70,25 @@ export async function PATCH(
       edges
     );
 
-    if (!validateSchema({ models: newModels, relations: newRelations })) {
+    // Validate schema structure
+    const isValid = validateSchema({ models: newModels, relations: newRelations });
+    if (!isValid) {
+      console.error("[autosave] Invalid schema structure:", {
+        models: newModels,
+        relations: newRelations,
+      });
       return NextResponse.json(
         { error: "Invalid schema structure" },
         { status: 400 }
       );
     }
+
+    console.log("[autosave] Serialized schema:", {
+      modelsCount: newModels.length,
+      relationsCount: newRelations.length,
+      modelNodeIds: newModels.map(m => m.nodeId),
+      relationEdgeIds: newRelations.map(r => r.edgeId),
+    });
 
     // Delete existing models and relations
     await (prismadb as any).schemaModel.deleteMany({
@@ -94,13 +107,18 @@ export async function PATCH(
           schemaId,
           name: model.name,
           nodeId: model.nodeId,
-          x: model.position?.x || 0,
-          y: model.position?.y || 0,
+          position: {
+            x: model.position?.x || 0,
+            y: model.position?.y || 0,
+          },
           fields: {
             create: model.fields.map((field: any) => ({
               name: field.name,
               type: field.type,
-              constraints: field.constraints,
+              isOptional: field.isOptional ?? true,
+              isList: field.isList ?? false,
+              constraints: field.constraints || [],
+              defaultValue: field.defaultValue || null,
             })),
           },
         },
@@ -110,12 +128,21 @@ export async function PATCH(
 
     // Create new relations with resolved model IDs
     for (const relation of newRelations) {
+      const sourceModelId = modelNodeIdMap[relation.sourceNodeId];
+      const targetModelId = modelNodeIdMap[relation.targetNodeId];
+
+      if (!sourceModelId || !targetModelId) {
+        console.error("Missing model IDs for relation:", relation);
+        continue; // Skip invalid relations
+      }
+
       await (prismadb as any).schemaRelation.create({
         data: {
           schemaId,
-          sourceModelId: modelNodeIdMap[relation.sourceNodeId],
-          targetModelId: modelNodeIdMap[relation.targetNodeId],
-          relationshipType: relation.relationType,
+          edgeId: relation.edgeId,
+          sourceModelId,
+          targetModelId,
+          relationType: relation.relationType,
         },
       });
     }
@@ -131,16 +158,23 @@ export async function PATCH(
 
     return NextResponse.json(
       {
-        message: "Schema autosaved successfully",
+        message: "Schema saved successfully",
         schemaId: updatedSchema.id,
         updatedAt: updatedSchema.updatedAt,
       },
       { status: 200 }
     );
-  } catch (error) {
-    console.error("Autosave schema error:", error);
+  } catch (error: any) {
+    console.error("[autosave] Save schema error:", {
+      message: error.message,
+      stack: error.stack,
+      name: error.name,
+    });
     return NextResponse.json(
-      { error: "Failed to autosave schema" },
+      { 
+        error: "Failed to save schema",
+        details: process.env.NODE_ENV === "development" ? error.message : undefined,
+      },
       { status: 500 }
     );
   }
