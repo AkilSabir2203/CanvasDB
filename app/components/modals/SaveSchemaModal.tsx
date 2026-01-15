@@ -1,9 +1,10 @@
 "use client";
 
-import React, { useState, useCallback } from "react";
+import React, { useState, useCallback, useEffect } from "react";
 import type { Node, Edge } from "@xyflow/react";
 import toast from "react-hot-toast";
 import useSaveSchemaStore from "@/app/hooks/useSaveSchemaStore";
+import usePendingSave from "@/app/hooks/usePendingSave";
 import { useSession } from "next-auth/react";
 import useLoginModal from "@/app/hooks/useLoginModal";
 import { Button } from "@/app/components/ui/Button";
@@ -36,46 +37,106 @@ const SaveSchemaModal: React.FC<SaveSchemaModalProps> = ({
     schemas,
     currentSchemaId,
   } = useSaveSchemaStore();
+  const { 
+    pendingName, 
+    pendingDescription, 
+    setPendingSave, 
+    getPendingSave, 
+    clearPendingSave 
+  } = usePendingSave();
 
   const [mode, setMode] = useState<"save" | "load">("save");
   const [schemaName, setSchemaName] = useState("");
   const [schemaDescription, setSchemaDescription] = useState("");
   const [selectedSchemaId, setSelectedSchemaId] = useState<string | null>(null);
+  const [isAttemptingSave, setIsAttemptingSave] = useState(false);
+
+  // Handle post-login save
+  useEffect(() => {
+    if (session?.user && isAttemptingSave) {
+      const pendingSave = getPendingSave();
+      console.log("[SaveSchemaModal] Post-login save triggered", { pendingSave, isAttemptingSave });
+      
+      if (pendingSave) {
+        // Perform the save
+        (async () => {
+          try {
+            if (pendingSave.nodes.length === 0) {
+              toast.error("Cannot save an empty schema");
+              setIsAttemptingSave(false);
+              return;
+            }
+
+            await saveSchema(pendingSave.name, pendingSave.description, pendingSave.nodes, pendingSave.edges);
+            toast.success("Schema saved successfully!");
+            
+            // Clear the form and pending save
+            setSchemaName("");
+            setSchemaDescription("");
+            clearPendingSave();
+            setIsAttemptingSave(false);
+            
+            // Close the modal
+            onClose();
+          } catch (error: any) {
+            console.error("[SaveSchemaModal] Post-login save error", error);
+            toast.error(error.message || "Failed to save schema");
+            setIsAttemptingSave(false);
+          }
+        })();
+      }
+    }
+  }, [session?.user, isAttemptingSave, getPendingSave, saveSchema, onClose, clearPendingSave]);
 
   const handleSaveSchema = useCallback(async () => {
-    if (!session) {
-      loginModal.onOpen();
-      return;
-    }
-
     if (!schemaName.trim()) {
       toast.error("Please enter a schema name");
       return;
     }
 
-    try {
-      if (nodes.length === 0) {
-        toast.error("Cannot save an empty schema");
-        return;
-      }
+    // If user is logged in, save immediately
+    if (session?.user) {
+      try {
+        if (nodes.length === 0) {
+          toast.error("Cannot save an empty schema");
+          return;
+        }
 
-      await saveSchema(schemaName, schemaDescription, nodes, edges);
-      toast.success("Schema saved successfully!");
-      setSchemaName("");
-      setSchemaDescription("");
+        await saveSchema(schemaName, schemaDescription, nodes, edges);
+        toast.success("Schema saved successfully!");
+        
+        // Clear the form and pending save
+        setSchemaName("");
+        setSchemaDescription("");
+        clearPendingSave();
+        
+        // Close the modal
+        onClose();
+      } catch (error: any) {
+        toast.error(error.message || "Failed to save schema");
+      }
+    } else {
+      // Store the save data
+      setPendingSave(schemaName, schemaDescription, nodes, edges);
+      setIsAttemptingSave(true);
+      // Close save modal before opening login modal
       onClose();
-    } catch (error: any) {
-      toast.error(error.message || "Failed to save schema");
+      // Open login modal after a brief delay to allow modal to close
+      setTimeout(() => {
+        loginModal.onOpen();
+      }, 300);
     }
   }, [
-    session,
+    session?.user,
     schemaName,
     schemaDescription,
     nodes,
     edges,
-    saveSchema,
+    setPendingSave,
+    clearPendingSave,
     onClose,
     loginModal,
+    saveSchema,
   ]);
 
   const handleLoadSchema = useCallback(async () => {
@@ -103,6 +164,12 @@ const SaveSchemaModal: React.FC<SaveSchemaModalProps> = ({
           value={schemaName}
           onChange={(e) => setSchemaName(e.target.value)}
           className="mt-1"
+          disabled={isSaving}
+          onKeyDown={(e) => {
+            if (e.key === "Enter" && schemaName.trim()) {
+              handleSaveSchema();
+            }
+          }}
         />
       </div>
       <div>
@@ -114,6 +181,7 @@ const SaveSchemaModal: React.FC<SaveSchemaModalProps> = ({
           value={schemaDescription}
           onChange={(e) => setSchemaDescription(e.target.value)}
           className="mt-1"
+          disabled={isSaving}
         />
       </div>
     </div>

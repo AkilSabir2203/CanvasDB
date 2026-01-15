@@ -5,6 +5,7 @@ import { useState } from "react";
 import { useSession } from "next-auth/react";
 import useCreateSchemaModal from "@/app/hooks/useCreateSchemaModal";
 import useOpenDocumentModal from "@/app/hooks/useOpenDocumentModal";
+import useSaveSchemaModal from "@/app/hooks/useSaveSchemaModal";
 import useLoginModal from "@/app/hooks/useLoginModal";
 import useSaveSchemaStore from "@/app/hooks/useSaveSchemaStore";
 import useCanvasStore from "@/app/hooks/useCanvasStore";
@@ -14,6 +15,7 @@ const Search = () => {
   const { data: session } = useSession();
   const createSchemaModal = useCreateSchemaModal();
   const openDocumentModal = useOpenDocumentModal();
+  const saveSchemaModal = useSaveSchemaModal();
   const loginModal = useLoginModal();
   const { currentSchemaId, schemas, isSaving: isAutosaving } = useSaveSchemaStore();
   const { nodes, edges } = useCanvasStore();
@@ -42,8 +44,9 @@ const Search = () => {
   };
 
   const handleSave = async () => {
+    // If no schema is currently loaded, open the save modal to create a new one
     if (!currentSchemaId) {
-      toast.error("No schema loaded. Please create a schema first.");
+      saveSchemaModal.onOpen();
       return;
     }
 
@@ -105,7 +108,7 @@ const Search = () => {
             disabled:opacity-50 disabled:cursor-not-allowed dark:border-none
           "
           onClick={handleSave}
-          disabled={!currentSchemaId || isSaving}
+          disabled={isSaving}
         >
           {isSaving ? (
             <Loader2 size={18} className="h-6 w-6 text-white rounded-sm animate-spin" />
