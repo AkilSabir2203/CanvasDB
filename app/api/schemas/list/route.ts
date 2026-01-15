@@ -45,7 +45,19 @@ export async function GET(request: NextRequest) {
       orderBy: { updatedAt: "desc" },
     });
 
-    return NextResponse.json({ schemas }, { status: 200 });
+    // Map _count to modelCount and relationCount
+    const mappedSchemas = schemas.map((schema: any) => ({
+      id: schema.id,
+      name: schema.name,
+      description: schema.description,
+      createdAt: schema.createdAt,
+      updatedAt: schema.updatedAt,
+      lastModifiedBy: schema.lastModifiedBy,
+      modelCount: schema._count.models,
+      relationCount: schema._count.relations,
+    }));
+
+    return NextResponse.json({ schemas: mappedSchemas }, { status: 200 });
   } catch (error) {
     console.error("List schemas error:", error);
     return NextResponse.json(

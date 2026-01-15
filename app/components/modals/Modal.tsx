@@ -77,12 +77,12 @@ const Modal: React.FC<ModalProps> = ({
    }, [disabled, onSubmit]);
 
    const handleSecondayAction = useCallback(() => {
-      if (disabled || secondaryDisabled || !secondaryAction) {
+      if (secondaryDisabled || !secondaryAction) {
          return;
       }
 
       secondaryAction();
-   }, [disabled, secondaryAction, secondaryDisabled]);
+   }, [secondaryAction, secondaryDisabled]);
 
    // visualize action handler (independent of generation disabled state)
    const handleVisualizeAction = useCallback(() => {

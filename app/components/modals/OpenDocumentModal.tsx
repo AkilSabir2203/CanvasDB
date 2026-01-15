@@ -34,6 +34,7 @@ const OpenDocumentModal: React.FC<OpenDocumentModalProps> = ({
   const [selectedSchemaId, setSelectedSchemaId] = useState<string | null>(null);
   const [isLoadingSchema, setIsLoadingSchema] = useState(false);
   const [deletingSchemaId, setDeletingSchemaId] = useState<string | null>(null);
+  const [isLoadingSchemas, setIsLoadingSchemas] = useState(false);
 
   // Load schemas when modal opens
   useEffect(() => {
@@ -43,12 +44,15 @@ const OpenDocumentModal: React.FC<OpenDocumentModalProps> = ({
   }, [isOpen]);
 
   const loadAndDisplaySchemas = async () => {
+    setIsLoadingSchemas(true);
     try {
       await useSaveSchemaStore.getState().loadSchemas();
       const schemas = useSaveSchemaStore.getState().schemas;
       setLocalSchemas(schemas as SchemaItem[]);
     } catch (error: any) {
       console.error(error);
+    } finally {
+      setIsLoadingSchemas(false);
     }
   };
 
@@ -135,13 +139,20 @@ const OpenDocumentModal: React.FC<OpenDocumentModalProps> = ({
   const body = (
     <div className="flex flex-col gap-4">
       <div className="text-sm text-gray-600">
-        {localSchemas.length === 0
+        {isLoadingSchemas
+          ? "Loading schemas..."
+          : localSchemas.length === 0
           ? "No saved schemas found. Create one using the Create button!"
           : "Click a document to open it"}
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 max-h-96 overflow-y-auto pr-2">
-        {localSchemas.length === 0 ? (
+        {isLoadingSchemas ? (
+          <div className="col-span-full flex flex-col items-center justify-center py-12 text-gray-400">
+            <Loader2 size={48} className="mb-4 animate-spin text-purple-600" />
+            <p className="text-sm">Loading schemas...</p>
+          </div>
+        ) : localSchemas.length === 0 ? (
           <div className="col-span-full flex flex-col items-center justify-center py-12 text-gray-400">
             <Database size={48} className="mb-4 opacity-50" />
             <p className="text-sm">No documents yet</p>
