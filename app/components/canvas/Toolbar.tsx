@@ -9,7 +9,7 @@ import {
     useStoreApi,
 } from '@xyflow/react';
 import { Button } from '@/app/components/ui/Button';
-import { Lock, PlusIcon, Unlock, ZoomIn, ZoomOut, Save, Upload } from 'lucide-react';
+import { Lock, PlusIcon, Unlock, ZoomIn, ZoomOut } from 'lucide-react';
 import { EntityNodeProps } from './EntityNode';
 import { shallow } from 'zustand/shallow';
 import { AspectRatioIcon } from '@radix-ui/react-icons';
@@ -82,9 +82,6 @@ function Toolbar() {
                 </Button>
                 <Button title='fit-view' onClick={onFitViewHandler}>
                     <AspectRatioIcon width={20} height={20} />
-                </Button>
-                <Button title='save-schema' onClick={saveSchemaModal.onOpen}>
-                    <Save size={20} />
                 </Button>
             </div>
         </Panel>
