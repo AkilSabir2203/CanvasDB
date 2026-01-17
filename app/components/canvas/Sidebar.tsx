@@ -568,7 +568,7 @@ export default function Sidebar() {
                 value={sparklesPrompt}
                 onChange={(e) => setSparklesPrompt(e.target.value)}
                 placeholder="Enter a short description of the desired Prisma schema"
-                className="w-full h-28 p-2 rounded border bg-white"
+                className="w-full h-28 p-2 rounded border bg-white dark:bg-neutral-700"
               />
             </div>
 
@@ -581,9 +581,9 @@ export default function Sidebar() {
                 disabled={!sparklesSchema}
                 className="absolute top-8 right-2 z-10 p-1 rounded bg-white hover:opacity-80 border"
               >
-                <Copy size={16} />
+                <Copy size={16}  className="dark:bg-neutral-700"/>
               </button>
-              <textarea readOnly value={sparklesSchema} className="w-full h-40 font-mono text-sm p-2 rounded border bg-white" />
+              <textarea readOnly value={sparklesSchema} className="w-full h-40 font-mono text-sm p-2 rounded border bg-white dark:bg-neutral-700" />
             </div>
           </div>
         }
