@@ -579,9 +579,9 @@ export default function Sidebar() {
                 aria-label="Copy generated schema"
                 onClick={copySparklesToClipboard}
                 disabled={!sparklesSchema}
-                className="absolute top-8 right-2 z-10 p-1 rounded bg-white hover:opacity-80 border"
+                className="absolute top-8 right-2 z-10 p-1 rounded bg-white hover:opacity-80 border dark:bg-neutral-700"
               >
-                <Copy size={16}  className="dark:bg-neutral-700"/>
+                <Copy size={16} />
               </button>
               <textarea readOnly value={sparklesSchema} className="w-full h-40 font-mono text-sm p-2 rounded border bg-white dark:bg-neutral-700" />
             </div>
