@@ -391,13 +391,13 @@ export default function Sidebar() {
     <div className="flex flex-col gap-4">
       <div className="grid grid-cols-1 gap-2">
         <label className="text-sm font-medium">Name</label>
-        <Input value={editing?.name || ''} onChange={(e) => setEditing((s) => s ? { ...s, name: e.target.value } : s)} />
+        <Input className="dark:border-white" value={editing?.name || ''} onChange={(e) => setEditing((s) => s ? { ...s, name: e.target.value } : s)} />
       </div>
 
       <div className="grid grid-cols-1 gap-2">
         <label className="text-sm font-medium">Type</label>
-        <Select value={editing?.type} defaultValue={attributeTypes[0]} onValueChange={(v) => setEditing((s) => s ? { ...s, type: v, updatedat: v === 'DateTime' ? s.updatedat : false, } : s)}>
-          <SelectTrigger>
+        <Select  value={editing?.type} defaultValue={attributeTypes[0]} onValueChange={(v) => setEditing((s) => s ? { ...s, type: v, updatedat: v === 'DateTime' ? s.updatedat : false, } : s)}>
+          <SelectTrigger className="dark:border-white">
             {editing?.type}
           </SelectTrigger>
           <SelectContent>
@@ -419,7 +419,7 @@ export default function Sidebar() {
             </SelectContent>
           </Select>
         ) : (
-          <Input value={editing?.defaultValue || ''} onChange={(e) => setEditing((s) => s ? { ...s, defaultValue: e.target.value } : s)} placeholder={editing?.type === 'Int' ? 'Enter a number' : 'Enter default value'} />
+          <Input className="dark:border-white" value={editing?.defaultValue || ''} onChange={(e) => setEditing((s) => s ? { ...s, defaultValue: e.target.value } : s)} placeholder={editing?.type === 'Int' ? 'Enter a number' : 'Enter default value'} />
         )}
       </div>
 
@@ -539,7 +539,7 @@ export default function Sidebar() {
               title="Copy schema"
               aria-label="Copy schema"
               onClick={copyToClipboard}
-              className="absolute top-2 right-2 z-10 p-1 rounded bg-white hover:opacity-80 border"
+              className="absolute top-2 right-2 z-10 p-1 rounded bg-white dark:bg-neutral-400 hover:opacity-80 border"
             >
               <Copy size={16} />
             </button>
@@ -606,7 +606,7 @@ export default function Sidebar() {
                 value={visualizeText}
                 onChange={(e) => setVisualizeText(e.target.value)}
                 placeholder="Paste Prisma schema here"
-                className="w-full h-48 p-2 rounded border bg-white"
+                className="w-full h-48 p-2 rounded border bg-white dark:bg-neutral-700"
               />
             </div>
           </div>

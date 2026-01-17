@@ -158,7 +158,7 @@ const SaveSchemaModal: React.FC<SaveSchemaModalProps> = ({
   const saveBody = (
     <div className="flex flex-col gap-4">
       <div>
-        <label className="text-sm font-medium text-gray-700">Schema Name</label>
+        <label className="text-sm font-medium text-gray-700 dark:text-neutral-200">Schema Name</label>
         <Input
           placeholder="e.g., User Management System"
           value={schemaName}
@@ -173,7 +173,7 @@ const SaveSchemaModal: React.FC<SaveSchemaModalProps> = ({
         />
       </div>
       <div>
-        <label className="text-sm font-medium text-gray-700">
+        <label className="text-sm font-medium text-gray-700 dark:text-neutral-200">
           Description (Optional)
         </label>
         <Input
@@ -251,7 +251,7 @@ const SaveSchemaModal: React.FC<SaveSchemaModalProps> = ({
               className={`px-4 py-2 font-medium text-sm ${
                 mode === "save"
                   ? "border-b-2 border-purple-600 text-purple-600"
-                  : "text-gray-600 hover:text-gray-900"
+                  : "text-gray-600 dark:text-white dark:hover:text-neutral-400 hover:text-gray-900"
               }`}
             >
               <Save size={16} className="inline mr-2" />
@@ -262,7 +262,7 @@ const SaveSchemaModal: React.FC<SaveSchemaModalProps> = ({
               className={`px-4 py-2 font-medium text-sm ${
                 mode === "load"
                   ? "border-b-2 border-purple-600 text-purple-600"
-                  : "text-gray-600 hover:text-gray-900"
+                  : "text-gray-600 dark:text-white dark:hover:text-neutral-400 hover:text-gray-900"
               }`}
             >
               <Upload size={16} className="inline mr-2" />

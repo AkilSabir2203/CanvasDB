@@ -84,7 +84,7 @@ const LoginModal = () => {
                     <div>
                         Don't have an account?
                     </div>
-                    <div onClick={toggle} className="text-neutral-800 cursor-pointer hover:underline">
+                    <div onClick={toggle} className="text-neutral-800 cursor-pointer hover:underline dark:text-white">
                         Signup
                     </div>
                 </div>
